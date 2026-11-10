@@ -55,9 +55,15 @@ Stop with Control+C. `npm run build` writes a static bundle to `dist/`; `npm run
 - **Why chosen:** the prototype has no authorized borrower records or linked repayment labels. Synthetic examples make this absence explicit rather than implying these farms are Suyana customers.
 - **Limits:** scenario shifts are hand-set perturbations, not forecasts, learned models or calibrated climate events. Simulated rain amounts are derived from the same reference as their displayed anomaly percentage so the numbers agree. Flags/rankings order follow-up questions, never approve/reject credit or predict default.
 
-## Yield-model development status
+## Historical regional soybean-yield experiment
 
-A separate real-data yield-model experiment is in progress. No fitted yield model or evaluated yield prediction is integrated in this version. Dataset choice, target, geographic aggregation, time coverage, licensing, held-out tests and baseline results will be documented here only after they are verified. Regional yield predictions must remain separate from observed parcel facts and cannot stand in for loan outcomes.
+The app includes a separate evaluation panel, not scores on the 24 parcels. SustainBench Crop Yield v1.0 supplies real 2005-2016 regional labels and full-season MODIS inputs. We chose it for real yield labels, Brazil/Argentina coverage plus a US comparison, and a reproducible public benchmark. It does not use the demo's Sentinel/Open-Meteo inputs. Colombia is not covered.
+
+Train: 2005-2013; held-out later years: 2014-2016. With the whole season observed, ridge RMSE (t/ha) is Brazil 0.4274 versus local-history 0.5233, Argentina 0.9696 versus 0.6747, US 0.5731 versus 0.6285. Lower is better. Argentina's model is worse than simply using regional history; this is not a generally reliable future-season forecast. Same-period spatial holdouts cannot prove new-year performance. No current farm or loan prediction is made.
+
+Data and derivative evaluation are CC BY-SA 4.0, attributed to SustainBench / Stanford Sustainability and AI Lab, NASA MODIS inputs, government yield statistics, and Wang et al. (2018). This is separate from the EOX backdrop's noncommercial imagery license. SustainBench code is MIT. Full methodology, source URLs, retrieval checksums, script, evaluation CSV/metrics and fitted models are in `research/yield/` locally and `yield-research.zip` in the repository. The raw ~304 MB dataset is not bundled; the included README gives accountless retrieval steps. Python dependencies are needed only to retrain, not to run the React demo. Only load trusted joblib/pickle model files.
+
+Source: https://sustainlab-group.github.io/sustainbench/docs/datasets/sdg2/crop_yield.html and https://github.com/sustainlab-group/SustainBench .
 
 ## Project layout
 
