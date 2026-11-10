@@ -72,8 +72,10 @@ function MapView({ scenario, selected, onSelect }){
   useEffect(() => {
     const map = L.map(el.current, { scrollWheelZoom: true, zoomControl: true, attributionControl: true })
       .setView([-14, -62], 4);
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-      maxZoom: 12, attribution: 'Esri, Maxar, Earthstar Geographics'
+    map.attributionControl.setPosition('bottomleft');
+    L.tileLayer('https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2025_3857/default/g/{z}/{y}/{x}.jpg', {
+      maxZoom: 14, maxNativeZoom: 13,
+      attribution: '<a href="https://cloudless.eox.at">EOxCloudless</a> by EOX IT Services GmbH (Contains modified Copernicus Sentinel data 2025) | <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a>' 
     }).addTo(map);
     DATA.loans.forEach(l => {
       const m = L.circleMarker([l.lat, l.lon], {
@@ -123,7 +125,7 @@ function MapView({ scenario, selected, onSelect }){
       m.setRadius((7 + Math.min(Math.sqrt(l.area_ha) / 6, 9)) + 3);
       m.bringToFront();
     }
-    const zoom = 11;
+    const zoom = 13;
     let target = L.latLng(l.lat, l.lon);
     if (window.innerWidth > 900){
       /* detail panel covers the right 480px: shift center east so the parcel
@@ -258,6 +260,7 @@ export function App(){
           ))}
         </div>
 
+        <div className="basemapnote">Free satellite backdrop · 2025 mosaic<br/><span>Noncommercial prototype · separate from dated farm readings</span></div>
         <div className="legendchip">
           <span><span className="dot" style={{background:'var(--red)'}}></span>Needs a look</span>
           <span><span className="dot" style={{background:'var(--amber)'}}></span>Watch</span>
@@ -289,6 +292,7 @@ export function App(){
 
         <div className="about">
           <h2>What this is, and what it is not</h2>
+          <p><strong>Free background map.</strong> EOxCloudless 2025 is a cloudless mosaic, not a live farm image. It is licensed for this noncommercial prototype under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener">CC BY-NC-SA 4.0</a>. Lender production use needs a separate map license. The dated Sentinel-2 measurements below are a different data source.</p>
           <p><strong>Real ground, real readings.</strong> Every parcel is a public OpenStreetMap farmland boundary in Brazil, Colombia or Argentina. Weather is measured: 60-day rainfall and soil moisture from the Open-Meteo archive through Nov 8, compared against the same source's own 2021-2025 history for the same dates. Satellite readings are per-pixel vegetation (NDVI) measured inside the parcel boundary from Sentinel-2 scenes at 10 m resolution.</p>
           <p><strong>Fictional loans.</strong> The portfolio, loan IDs and amounts are invented for this demo. These are real farms on a map, not Suyana customers.</p>
           <p><strong>Flags say where to look, not who will default.</strong> A low vegetation reading can follow harvest, planting or crop stage as easily as stress. A rain deficit is a reason to call the farmer, not proof of loss. Nothing here predicts default.</p>
@@ -307,4 +311,4 @@ export function App(){
       </aside>
     </div>
   );
-            }
+}
