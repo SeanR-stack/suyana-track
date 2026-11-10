@@ -171,6 +171,9 @@
   .about h2{font-size:18px;font-weight:560;margin-bottom:12px}
   .about p{color:var(--dim);font-size:13.8px;line-height:1.75;margin-bottom:9px}
   .about p strong{color:var(--ink);font-weight:600}
+  .attr{display:flex;align-items:center;gap:14px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line);color:var(--dim);font-size:13.2px;line-height:1.6}
+  .attr svg{width:34px;height:34px;flex:none}
+  .attr strong{color:var(--ink);font-weight:600}
 
   .leaflet-container{background:#0a0f0b;font-family:'Karla',sans-serif}
   .leaflet-control-attribution{background:rgba(10,15,11,.75)!important;color:#5d6a5c!important;font-size:10px!important}
