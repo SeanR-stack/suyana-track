@@ -163,8 +163,8 @@ button{font-family:inherit;cursor:pointer}
 .attr strong{color:var(--ink);font-weight:600}
 
 /* ---------- detail panel ---------- */
-.overlay{position:fixed;inset:0;background:rgba(5,8,6,.55);backdrop-filter:blur(3px);opacity:0;pointer-events:none;transition:opacity .25s ease;z-index:2000}
-.overlay.show{opacity:1;pointer-events:auto}
+.overlay{position:fixed;inset:0;background:rgba(5,8,6,.12);opacity:0;pointer-events:none;transition:opacity .25s ease;z-index:2000}
+.overlay.show{opacity:1;pointer-events:none}
 .detail{
   position:fixed;top:0;right:0;bottom:0;width:min(480px,100%);z-index:2001;
   background:linear-gradient(170deg,#131c15,#0d120e);
@@ -232,7 +232,7 @@ button{font-family:inherit;cursor:pointer}
   .legendchip{right:10px;left:10px;bottom:8px;gap:10px;row-gap:4px;padding:8px 12px;font-size:10.3px}
   .legendchip .count{padding-left:9px}
   .simchip{top:10px;font-size:12px}
-  .detail{top:auto;left:0;right:0;bottom:0;width:auto;max-height:82vh;
+  .detail{top:auto;left:0;right:0;bottom:0;width:auto;max-height:48vh;
     border-left:none;border-top:1px solid var(--line);
     border-radius:24px 24px 0 0;transform:translateY(102%)}
   .detail.show{transform:none}
