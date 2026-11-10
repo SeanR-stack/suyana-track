@@ -270,3 +270,7 @@ button{font-family:inherit;cursor:pointer}
 .yieldplot text{fill:#b4c2a9;font-size:11px;font-family:inherit}
 .yieldreview summary{cursor:pointer;color:#c9e1b9;margin-top:15px}
 .yieldreview a{color:#a3d98b}
+
+/* markers hidden while the camera flies between views (they are CSS-scaled mid-flight) */
+.leaflet-overlay-pane{transition:opacity .18s ease}
+.flying .leaflet-overlay-pane{opacity:0}
