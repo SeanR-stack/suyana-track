@@ -251,3 +251,22 @@ button{font-family:inherit;cursor:pointer}
 .legendchip{bottom:48px}
 .simchip.show{top:88px}
 @media(max-width:900px){.basemapnote{top:8px;left:auto;right:8px;max-width:260px;font-size:11px}.basemapnote span{font-size:10px}.stage .leaflet-control-attribution{font-size:9px!important;max-width:100%}.legendchip{bottom:48px}.scendock{bottom:108px}.simchip.show{top:80px}}
+
+.yieldreview{margin-bottom:24px;border:1px solid #354a30;background:linear-gradient(145deg,#172414,#101710);border-radius:18px;padding:18px;color:var(--dim);font-size:13px;line-height:1.6}
+.yieldreview .secttl{margin:0 0 8px;font-size:10px;color:#a3d98b}
+.yieldreview h2{font-size:23px;line-height:1.18;color:var(--ink);margin-bottom:10px}
+.yieldreview h3{font-size:14px;color:var(--ink);margin:12px 0 8px;font-family:inherit}
+.yieldreview p{margin:9px 0}.yieldlead{color:#dce6d4}
+.yieldtabs{display:flex;gap:5px;margin:15px 0;flex-wrap:wrap}
+.yieldtabs button{border:1px solid #3d5036;border-radius:20px;background:#101710;color:#b7c3ae;padding:7px 12px;font-size:12px}
+.yieldtabs button.active{background:#315825;color:#e1f5d4;border-color:#6c9c53}
+.yieldverdict{font-size:12px;line-height:1.45;color:#e0d9bb;margin:10px 0}
+.yieldmetrics{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:14px}
+.yieldmetrics span{background:#0e160c;border-radius:9px;padding:9px 7px}
+.yieldmetrics small{display:block;font-size:10px;white-space:nowrap}
+.yieldmetrics b{display:block;color:#e0eed6;font-size:21px;font-weight:500;font-variant-numeric:tabular-nums}
+.yieldcaption{font-size:11px;color:#a5b29d}
+.yieldplot{width:100%;height:auto;display:block;background:#0e160c;border-radius:10px;margin-top:14px;overflow:visible}
+.yieldplot text{fill:#b4c2a9;font-size:11px;font-family:inherit}
+.yieldreview summary{cursor:pointer;color:#c9e1b9;margin-top:15px}
+.yieldreview a{color:#a3d98b}
