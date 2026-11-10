@@ -61,11 +61,12 @@ function SuyanaMark({ size = 54 }){
   );
 }
 
-function MapView({ scenario, onSelect }){
+function MapView({ scenario, selected, onSelect }){
   const el = useRef(null);
   const mapRef = useRef(null);
   const markersRef = useRef({});
   const onSelectRef = useRef(onSelect);
+  const prevSelectedRef = useRef(undefined);
   onSelectRef.current = onSelect;
 
   useEffect(() => {
@@ -92,6 +93,47 @@ function MapView({ scenario, onSelect }){
       if (m) m.setStyle({ color: COLORS[f.level], fillColor: COLORS[f.level] });
     });
   }, [scenario]);
+
+  /* Animated fly-to: selecting a farm (card or marker) flies the map to its parcel;
+     closing flies back to the overview. Offset keeps the parcel clear of the
+     detail panel on wide screens. Reduced motion jumps instead of flying. */
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const prev = prevSelectedRef.current;
+    prevSelectedRef.current = selected;
+    if (prev === selected) return;
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    DATA.loans.forEach(l => {
+      const m = markersRef.current[l.loan_id];
+      if (m){ m.setStyle({ weight: 2 }); m.setRadius(7 + Math.min(Math.sqrt(l.area_ha) / 6, 9)); }
+    });
+
+    if (!selected){
+      if (prev === undefined) return; /* initial mount: stay on overview */
+      if (reduced) map.setView([-14, -62], 4, { animate: false });
+      else map.flyTo([-14, -62], 4, { duration: .9 });
+      return;
+    }
+    const l = DATA.loans.find(x => x.loan_id === selected);
+    const m = markersRef.current[selected];
+    if (m){
+      m.setStyle({ weight: 3.5 });
+      m.setRadius((7 + Math.min(Math.sqrt(l.area_ha) / 6, 9)) + 3);
+      m.bringToFront();
+    }
+    const zoom = 11;
+    let target = L.latLng(l.lat, l.lon);
+    if (window.innerWidth > 900){
+      /* detail panel covers the right 480px: shift center east so the parcel
+         lands in the middle of the still-visible map area */
+      const pt = map.project(target, zoom);
+      target = map.unproject(pt.add(L.point(240, 0)), zoom);
+    }
+    if (reduced) map.setView(target, zoom, { animate: false });
+    else map.flyTo(target, zoom, { duration: .95 });
+  }, [selected]);
 
   return <div id="map" ref={el}></div>;
 }
@@ -198,7 +240,7 @@ export function App(){
       </div>
 
       <main className="stage">
-        <MapView scenario={scenario} onSelect={setSelected} />
+        <MapView scenario={scenario} selected={selected} onSelect={setSelected} />
 
         <div className={'simchip' + (scenario !== 'live' ? ' show' : '')}>Simulated scenario - these readings are not real. The Nov 8 snapshot has the measured data.</div>
 
