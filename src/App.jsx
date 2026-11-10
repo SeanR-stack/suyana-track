@@ -38,14 +38,30 @@ function ageOf(dateStr){
 
 const COLORS = { red:'#e8836f', amber:'#e4b272', green:'#a3d98b', grey:'#8a938a' };
 const SCENARIOS = [
-  ['live', 'Nov 8 snapshot'],
-  ['drought', 'Drought'],
-  ['rain', 'Heavy rain'],
-  ['heat', 'Heat wave'],
-  ['missing', 'Missing data'],
+  ['live', 'Nov 8 snapshot', 'measured data'],
+  ['drought', 'Drought', 'simulated dry spell'],
+  ['rain', 'Heavy rain', 'simulated wet spell'],
+  ['heat', 'Heat wave', 'simulated hot spell'],
+  ['missing', 'Missing data', 'simulated feed outage'],
 ];
 
-function MapView({ scenario, onSelect, onScenario }){
+function SuyanaMark({ size = 54 }){
+  return (
+    <svg width={size} height={size} viewBox="0 0 117 117" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Suyana logo">
+      <mask id="suyanaMarkMaskTop" style={{maskType:'alpha'}} maskUnits="userSpaceOnUse" x="0" y="0" width="117" height="117"><circle cx="58.3597" cy="58.3597" r="58.3597" fill="black"></circle></mask>
+      <g mask="url(#suyanaMarkMaskTop)">
+        <path d="M22.7265 138.043C74.6328 125.978 25.2516 95.6762 -11.2233 109.144" stroke="#4DB92D" strokeWidth="12" strokeLinecap="round"></path>
+        <path d="M47.137 144.216C104.374 104.935 30.583 77.4388 -14.8702 82.4892" stroke="#4DB92D" strokeWidth="12" strokeLinecap="round"></path>
+        <path d="M10.6616 -36.7554C-1.12258 -18.7986 -15.2402 46.0029 53.5996 70.2548C92.3091 83.892 102.41 107.741 87.2588 142.813" stroke="#4DB92D" strokeWidth="12" strokeLinecap="round"></path>
+        <path d="M25.8133 -22.446C20.7434 17.197 27.7772 37.036 74.4942 52.7404C116.497 66.8602 124.08 107.945 119.806 134.676" stroke="#4DB92D" strokeWidth="12" strokeLinecap="round"></path>
+        <path d="M68.7412 -33.1078C9.82036 21.6043 97.5761 42.0863 143.029 37.036" stroke="#4DB92D" strokeWidth="12" strokeLinecap="round"></path>
+        <path d="M84.4536 -28.3381C51.3457 -2.80578 87.5316 21.0431 124.006 7.57551" stroke="#4DB92D" strokeWidth="12" strokeLinecap="round"></path>
+      </g>
+    </svg>
+  );
+}
+
+function MapView({ scenario, onSelect }){
   const el = useRef(null);
   const mapRef = useRef(null);
   const markersRef = useRef({});
@@ -77,21 +93,7 @@ function MapView({ scenario, onSelect, onScenario }){
     });
   }, [scenario]);
 
-  return (
-    <div className="mapcard">
-      <div id="map" ref={el}></div>
-      <div className="scenariobar">
-        <span className="lab">View</span>
-        {SCENARIOS.map(([k, label]) => (
-          <button key={k} className={'pill' + (scenario === k ? ' on' : '')} onClick={() => onScenario(k)}>{label}</button>
-        ))}
-      </div>
-      <div className="mapfoot">
-        <span><span className="dot" style={{background:'var(--red)'}}></span>Needs a look&nbsp;&nbsp;<span className="dot" style={{background:'var(--amber)'}}></span>Watch&nbsp;&nbsp;<span className="dot" style={{background:'var(--green)'}}></span>Within norms&nbsp;&nbsp;<span className="dot" style={{background:'#8a938a'}}></span>No data</span>
-        <span>24 parcels</span>
-      </div>
-    </div>
-  );
+  return <div id="map" ref={el}></div>;
 }
 
 function Detail({ id, scenario, instant, onClose }){
@@ -180,66 +182,75 @@ export function App(){
   }, [scenario]);
 
   return (
-    <>
-      <header>
-        <div className="brand">
-          <div className="mark" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none"><path d="M12 3C7 8 5 12 5 15a7 7 0 0 0 14 0c0-3-2-7-7-12z" fill="#0c110d" opacity=".55"/><path d="M12 5.5C8.4 9.3 7 12.4 7 15a5 5 0 0 0 10 0c0-2.6-1.4-5.7-5-9.5z" fill="#e9f4e2"/></svg>
-          </div>
+    <div className="app">
+      <div className="brandrow">
+        <div className="brandblock">
+          <SuyanaMark size={54} />
           <div>
             <h1>Suyana</h1>
-            <div className="sub">Portfolio climate review - lender demo</div>
+            <div className="sub">Portfolio climate review</div>
           </div>
         </div>
-        <div className="dateline">Weather through Nov 8 · Satellite scenes Sep 12 - Nov 8, 2026<br/>Data tested Nov 9, 2026</div>
-      </header>
+        <div className="brandmeta">
+          <span className="demochip">Independent lender demo</span>
+          <span className="dateline">Weather through Nov 8 · Satellite scenes Sep 12 - Nov 8, 2026 · Data tested Nov 9, 2026</span>
+        </div>
+      </div>
 
-      <div className={'simbanner' + (scenario !== 'live' ? ' show' : '')}>Simulated scenario - the readings below are not real. Switch back to the Nov 8 snapshot for measured data.</div>
+      <main className="stage">
+        <MapView scenario={scenario} onSelect={setSelected} />
 
-      <div className="wrap">
-        <MapView scenario={scenario} onSelect={setSelected} onScenario={setScenario} />
+        <div className={'simchip' + (scenario !== 'live' ? ' show' : '')}>Simulated scenario - these readings are not real. The Nov 8 snapshot has the measured data.</div>
 
+        <div className="scendock">
+          <div className="docklab">View</div>
+          {SCENARIOS.map(([k, label, desc]) => (
+            <button key={k} className={'scen' + (scenario === k ? ' on' : '')} onClick={() => setScenario(k)}>
+              <span className="scenname">{label}</span>
+              <span className="scendesc">{desc}</span>
+            </button>
+          ))}
+        </div>
+
+        <div className="legendchip">
+          <span><span className="dot" style={{background:'var(--red)'}}></span>Needs a look</span>
+          <span><span className="dot" style={{background:'var(--amber)'}}></span>Watch</span>
+          <span><span className="dot" style={{background:'var(--green)'}}></span>Within norms</span>
+          <span><span className="dot" style={{background:'#8a938a'}}></span>No data</span>
+          <span className="count">24 parcels</span>
+        </div>
+      </main>
+
+      <div className="listcol">
+        <div className="listhead">
+          <h2>Where to look first</h2>
+          <span>{scenario === 'live' ? 'ranked by rainfall anomaly' : 'simulated ranking'}</span>
+        </div>
         <div>
-          <div className="listhead">
-            <h2>Where to look first</h2>
-            <span>{scenario === 'live' ? 'ranked by rainfall anomaly' : 'simulated ranking'}</span>
-          </div>
-          <div>
-            {rows.map((x, i) => {
-              const satline = x.r.missing ? 'No recent reading - data feed down'
-                : x.r.sat ? `Satellite ${x.r.sat.readings[x.r.sat.readings.length-1].ndvi.toFixed(2)} on ${x.r.sat.readings[x.r.sat.readings.length-1].date}`
-                : 'No 10 m satellite reading yet';
-              return (
-                <button className="farm" key={scenario + '-' + x.l.loan_id} style={{animationDelay: (i * 26) + 'ms'}} onClick={() => setSelected(x.l.loan_id)}>
-                  <div className="top"><span className="name">{x.l.region}</span><span className="rank">#{i+1}</span></div>
-                  <div className={'flag ' + x.f.level}>{x.f.label} · {x.r.a > 0 ? '+' : ''}{x.r.a}% rain vs 5-yr</div>
-                  <div className="meta">{x.l.area_ha} ha · {x.l.loan_id} · soil moisture {x.r.missing ? '—' : x.r.soil.toFixed(2)} · {satline}</div>
-                </button>
-              );
-            })}
-          </div>
+          {rows.map((x, i) => {
+            const satline = x.r.missing ? 'No recent reading - data feed down'
+              : x.r.sat ? `Satellite ${x.r.sat.readings[x.r.sat.readings.length-1].ndvi.toFixed(2)} on ${x.r.sat.readings[x.r.sat.readings.length-1].date}`
+              : 'No 10 m satellite reading yet';
+            return (
+              <button className={'farm edge-' + x.f.level} key={scenario + '-' + x.l.loan_id} style={{animationDelay: (i * 26) + 'ms'}} onClick={() => setSelected(x.l.loan_id)}>
+                <div className="top"><span className="name">{x.l.region}</span><span className="rank">#{i+1}</span></div>
+                <div className={'flag ' + x.f.level}>{x.f.label} · {x.r.a > 0 ? '+' : ''}{x.r.a}% rain vs 5-yr</div>
+                <div className="meta">{x.l.area_ha} ha · {x.l.loan_id} · soil moisture {x.r.missing ? '—' : x.r.soil.toFixed(2)} · {satline}</div>
+              </button>
+            );
+          })}
+        </div>
 
-          <div className="about" style={{margin:'26px 0 0'}}>
-            <h2>What this is, and what it is not</h2>
-            <p><strong>Real ground, real readings.</strong> Every parcel is a public OpenStreetMap farmland boundary in Brazil, Colombia or Argentina. Weather is measured: 60-day rainfall and soil moisture from the Open-Meteo archive through Nov 8, compared against the same source's own 2021-2025 history for the same dates. Satellite readings are per-pixel vegetation (NDVI) measured inside the parcel boundary from Sentinel-2 scenes at 10 m resolution.</p>
-            <p><strong>Fictional loans.</strong> The portfolio, loan IDs and amounts are invented for this demo. These are real farms on a map, not Suyana customers.</p>
-            <p><strong>Flags say where to look, not who will default.</strong> A low vegetation reading can follow harvest, planting or crop stage as easily as stress. A rain deficit is a reason to call the farmer, not proof of loss. Nothing here predicts default.</p>
-            <p><strong>Ranking.</strong> Sorted by the size of each parcel's rainfall anomaly against its own 5-year baseline. Soil moisture is shown as context only (raw volumetric value, 0-7 cm depth), not judged against a seasonal target. The point is investigation order, not a score.</p>
-            <p><strong>Stale data is shown, not hidden.</strong> Every satellite reading carries its scene date. Cloudy stretches mean some readings are weeks old, and that age is printed next to the number.</p>
-            <div className="attr">
-              <svg viewBox="0 0 117 117" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Suyana logo">
-                <mask id="suyanaMarkMask" style={{maskType:'alpha'}} maskUnits="userSpaceOnUse" x="0" y="0" width="117" height="117"><circle cx="58.3597" cy="58.3597" r="58.3597" fill="black"></circle></mask>
-                <g mask="url(#suyanaMarkMask)">
-                  <path d="M22.7265 138.043C74.6328 125.978 25.2516 95.6762 -11.2233 109.144" stroke="#4DB92D" strokeWidth="12" strokeLinecap="round"></path>
-                  <path d="M47.137 144.216C104.374 104.935 30.583 77.4388 -14.8702 82.4892" stroke="#4DB92D" strokeWidth="12" strokeLinecap="round"></path>
-                  <path d="M10.6616 -36.7554C-1.12258 -18.7986 -15.2402 46.0029 53.5996 70.2548C92.3091 83.892 102.41 107.741 87.2588 142.813" stroke="#4DB92D" strokeWidth="12" strokeLinecap="round"></path>
-                  <path d="M25.8133 -22.446C20.7434 17.197 27.7772 37.036 74.4942 52.7404C116.497 66.8602 124.08 107.945 119.806 134.676" stroke="#4DB92D" strokeWidth="12" strokeLinecap="round"></path>
-                  <path d="M68.7412 -33.1078C9.82036 21.6043 97.5761 42.0863 143.029 37.036" stroke="#4DB92D" strokeWidth="12" strokeLinecap="round"></path>
-                  <path d="M84.4536 -28.3381C51.3457 -2.80578 87.5316 21.0431 124.006 7.57551" stroke="#4DB92D" strokeWidth="12" strokeLinecap="round"></path>
-                </g>
-              </svg>
-              <div><strong>About the logo.</strong> This is the official Suyana mark, taken from suyana.io. The demo is built on Suyana's challenge track at the MIT Energy &amp; Climate Hack (Nov 2026) as an independent project - it is not affiliated with, or endorsed by, Suyana.</div>
-            </div>
+        <div className="about">
+          <h2>What this is, and what it is not</h2>
+          <p><strong>Real ground, real readings.</strong> Every parcel is a public OpenStreetMap farmland boundary in Brazil, Colombia or Argentina. Weather is measured: 60-day rainfall and soil moisture from the Open-Meteo archive through Nov 8, compared against the same source's own 2021-2025 history for the same dates. Satellite readings are per-pixel vegetation (NDVI) measured inside the parcel boundary from Sentinel-2 scenes at 10 m resolution.</p>
+          <p><strong>Fictional loans.</strong> The portfolio, loan IDs and amounts are invented for this demo. These are real farms on a map, not Suyana customers.</p>
+          <p><strong>Flags say where to look, not who will default.</strong> A low vegetation reading can follow harvest, planting or crop stage as easily as stress. A rain deficit is a reason to call the farmer, not proof of loss. Nothing here predicts default.</p>
+          <p><strong>Ranking.</strong> Sorted by the size of each parcel's rainfall anomaly against its own 5-year baseline. Soil moisture is shown as context only (raw volumetric value, 0-7 cm depth), not judged against a seasonal target. The point is investigation order, not a score.</p>
+          <p><strong>Stale data is shown, not hidden.</strong> Every satellite reading carries its scene date. Cloudy stretches mean some readings are weeks old, and that age is printed next to the number.</p>
+          <div className="attr">
+            <SuyanaMark size={34} />
+            <div><strong>About the logo.</strong> This is the official Suyana mark, taken from suyana.io. The demo is built on Suyana's challenge track at the MIT Energy &amp; Climate Hack (Nov 2026) as an independent project - it is not affiliated with, or endorsed by, Suyana.</div>
           </div>
         </div>
       </div>
@@ -248,6 +259,6 @@ export function App(){
       <aside className={'detail' + (selected ? ' show' : '') + (instant ? ' notrans' : '')}>
         {selected && <Detail id={selected} scenario={scenario} instant={instant} onClose={() => setSelected(null)} />}
       </aside>
-    </>
+    </div>
   );
 }
