@@ -22,6 +22,8 @@ Same design, data and wording as the single-file demo, rebuilt as a React + Vite
 Stop with Ctrl+C. `npm run build` makes a static bundle in `dist/`;
 `npm run preview` serves that build.
 
+This repo auto-deploys to Vercel on every push to main.
+
 ## Project layout
 
 - `src/App.jsx` - the whole app: scenario logic, ranking, map, list, detail panel
