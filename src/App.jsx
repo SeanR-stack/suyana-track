@@ -226,6 +226,20 @@ export function App(){
             <p><strong>Flags say where to look, not who will default.</strong> A low vegetation reading can follow harvest, planting or crop stage as easily as stress. A rain deficit is a reason to call the farmer, not proof of loss. Nothing here predicts default.</p>
             <p><strong>Ranking.</strong> Sorted by the size of each parcel's rainfall anomaly against its own 5-year baseline. Soil moisture is shown as context only (raw volumetric value, 0-7 cm depth), not judged against a seasonal target. The point is investigation order, not a score.</p>
             <p><strong>Stale data is shown, not hidden.</strong> Every satellite reading carries its scene date. Cloudy stretches mean some readings are weeks old, and that age is printed next to the number.</p>
+            <div className="attr">
+              <svg viewBox="0 0 117 117" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Suyana logo">
+                <mask id="suyanaMarkMask" style={{maskType:'alpha'}} maskUnits="userSpaceOnUse" x="0" y="0" width="117" height="117"><circle cx="58.3597" cy="58.3597" r="58.3597" fill="black"></circle></mask>
+                <g mask="url(#suyanaMarkMask)">
+                  <path d="M22.7265 138.043C74.6328 125.978 25.2516 95.6762 -11.2233 109.144" stroke="#4DB92D" strokeWidth="12" strokeLinecap="round"></path>
+                  <path d="M47.137 144.216C104.374 104.935 30.583 77.4388 -14.8702 82.4892" stroke="#4DB92D" strokeWidth="12" strokeLinecap="round"></path>
+                  <path d="M10.6616 -36.7554C-1.12258 -18.7986 -15.2402 46.0029 53.5996 70.2548C92.3091 83.892 102.41 107.741 87.2588 142.813" stroke="#4DB92D" strokeWidth="12" strokeLinecap="round"></path>
+                  <path d="M25.8133 -22.446C20.7434 17.197 27.7772 37.036 74.4942 52.7404C116.497 66.8602 124.08 107.945 119.806 134.676" stroke="#4DB92D" strokeWidth="12" strokeLinecap="round"></path>
+                  <path d="M68.7412 -33.1078C9.82036 21.6043 97.5761 42.0863 143.029 37.036" stroke="#4DB92D" strokeWidth="12" strokeLinecap="round"></path>
+                  <path d="M84.4536 -28.3381C51.3457 -2.80578 87.5316 21.0431 124.006 7.57551" stroke="#4DB92D" strokeWidth="12" strokeLinecap="round"></path>
+                </g>
+              </svg>
+              <div><strong>About the logo.</strong> This is the official Suyana mark, taken from suyana.io. The demo is built on Suyana's challenge track at the MIT Energy &amp; Climate Hack (Nov 2026) as an independent project - it is not affiliated with, or endorsed by, Suyana.</div>
+            </div>
           </div>
         </div>
       </div>
@@ -236,4 +250,4 @@ export function App(){
       </aside>
     </>
   );
-    }
+}
