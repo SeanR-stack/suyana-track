@@ -45,7 +45,7 @@ const SCENARIOS = [
   ['missing', 'Missing data'],
 ];
 
-function MapView({ scenario, onSelect }){
+function MapView({ scenario, onSelect, onScenario }){
   const el = useRef(null);
   const mapRef = useRef(null);
   const markersRef = useRef({});
@@ -80,6 +80,12 @@ function MapView({ scenario, onSelect }){
   return (
     <div className="mapcard">
       <div id="map" ref={el}></div>
+      <div className="scenariobar">
+        <span className="lab">View</span>
+        {SCENARIOS.map(([k, label]) => (
+          <button key={k} className={'pill' + (scenario === k ? ' on' : '')} onClick={() => onScenario(k)}>{label}</button>
+        ))}
+      </div>
       <div className="mapfoot">
         <span><span className="dot" style={{background:'var(--red)'}}></span>Needs a look&nbsp;&nbsp;<span className="dot" style={{background:'var(--amber)'}}></span>Watch&nbsp;&nbsp;<span className="dot" style={{background:'var(--green)'}}></span>Within norms&nbsp;&nbsp;<span className="dot" style={{background:'#8a938a'}}></span>No data</span>
         <span>24 parcels</span>
@@ -188,16 +194,10 @@ export function App(){
         <div className="dateline">Weather through Nov 8 · Satellite scenes Sep 12 - Nov 8, 2026<br/>Data tested Nov 9, 2026</div>
       </header>
 
-      <div className="scenariobar">
-        <span className="lab">View</span>
-        {SCENARIOS.map(([k, label]) => (
-          <button key={k} className={'pill' + (scenario === k ? ' on' : '')} onClick={() => setScenario(k)}>{label}</button>
-        ))}
-      </div>
       <div className={'simbanner' + (scenario !== 'live' ? ' show' : '')}>Simulated scenario - the readings below are not real. Switch back to the Nov 8 snapshot for measured data.</div>
 
       <div className="wrap">
-        <MapView scenario={scenario} onSelect={setSelected} />
+        <MapView scenario={scenario} onSelect={setSelected} onScenario={setScenario} />
 
         <div>
           <div className="listhead">
@@ -210,7 +210,7 @@ export function App(){
                 : x.r.sat ? `Satellite ${x.r.sat.readings[x.r.sat.readings.length-1].ndvi.toFixed(2)} on ${x.r.sat.readings[x.r.sat.readings.length-1].date}`
                 : 'No 10 m satellite reading yet';
               return (
-                <button className="farm" key={x.l.loan_id} onClick={() => setSelected(x.l.loan_id)}>
+                <button className="farm" key={scenario + '-' + x.l.loan_id} style={{animationDelay: (i * 26) + 'ms'}} onClick={() => setSelected(x.l.loan_id)}>
                   <div className="top"><span className="name">{x.l.region}</span><span className="rank">#{i+1}</span></div>
                   <div className={'flag ' + x.f.level}>{x.f.label} · {x.r.a > 0 ? '+' : ''}{x.r.a}% rain vs 5-yr</div>
                   <div className="meta">{x.l.area_ha} ha · {x.l.loan_id} · soil moisture {x.r.missing ? '—' : x.r.soil.toFixed(2)} · {satline}</div>
