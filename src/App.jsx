@@ -95,6 +95,34 @@ function SuyanaMark({ size = 54 }){
   );
 }
 
+const TILE_URL = 'https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2025_3857/default/g/{z}/{y}/{x}.jpg';
+
+/* Warm the browser cache with the tiles covering the map viewport at the
+   flight destination. Leaflet swaps zoom levels faster than tiles can stream
+   in, which flashed the dark background; preloading first lets the new level
+   render from cache the moment the flyTo lands. Bounded: one zoom level,
+   one viewport plus a one-tile margin (~24-35 requests, what a normal pan
+   would load anyway). Returns a promise resolving when they settle. */
+function preloadTiles(map, center, zoom, margin = 1){
+  const size = map.getSize();
+  const centerPx = map.project(center, zoom);
+  const half = L.point(size.x / 2, size.y / 2);
+  const min = centerPx.subtract(half).divideBy(256).floor().subtract(L.point(margin, margin));
+  const max = centerPx.add(half).divideBy(256).floor().add(L.point(margin, margin));
+  const limit = Math.pow(2, zoom) - 1;
+  const loads = [];
+  for (let x = Math.max(0, min.x); x <= Math.min(limit, max.x); x++){
+    for (let y = Math.max(0, min.y); y <= Math.min(limit, max.y); y++){
+      loads.push(new Promise(res => {
+        const im = new Image();
+        im.onload = im.onerror = () => res();
+        im.src = TILE_URL.replace('{z}', zoom).replace('{y}', y).replace('{x}', x);
+      }));
+    }
+  }
+  return Promise.allSettled(loads);
+}
+
 function MapView({ scenario, selected, onSelect }){
   const el = useRef(null);
   const mapRef = useRef(null);
@@ -107,8 +135,13 @@ function MapView({ scenario, selected, onSelect }){
     const map = L.map(el.current, { scrollWheelZoom: true, zoomControl: true, attributionControl: true })
       .setView([-14, -62], 4);
     map.attributionControl.setPosition('bottomleft');
-    L.tileLayer('https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2025_3857/default/g/{z}/{y}/{x}.jpg', {
+    /* updateWhenZooming:false: do not swap tile levels mid-animation. The
+       current tiles stay painted and scale smoothly through the whole flight
+       instead of being dropped for a level that has not loaded yet. The old
+       level also stays under the new one after landing until its tiles draw. */
+    L.tileLayer(TILE_URL, {
       maxZoom: 14, maxNativeZoom: 13,
+      updateWhenZooming: false,
       attribution: '<a href="https://cloudless.eox.at">EOxCloudless</a> by EOX IT Services GmbH (Contains modified Copernicus Sentinel data 2025) | <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a>' 
     }).addTo(map);
     DATA.loans.forEach(l => {
@@ -120,6 +153,10 @@ function MapView({ scenario, selected, onSelect }){
       markersRef.current[l.loan_id] = m;
     });
     mapRef.current = map;
+    /* During a flyTo the vector markers are CSS-scaled from the starting zoom,
+       so a small farm marker would grow to hundreds of pixels mid-flight and
+       flood the map with its fill color. Hide the markers while flying and
+       fade them back in at the destination. */
     return () => { map.remove(); mapRef.current = null; markersRef.current = {}; };
   }, []);
 
@@ -129,6 +166,33 @@ function MapView({ scenario, selected, onSelect }){
       if (m) m.setStyle({ color: COLORS[f.level], fillColor: COLORS[f.level] });
     });
   }, [scenario]);
+
+  const flyTimerRef = useRef(null);
+  const flightGenRef = useRef(0);
+  /* Preload destination tiles, then start the flight once they are mostly in
+     (capped wait so a slow connection cannot stall the response). A stale
+     continuation from an earlier selection never starts a flight. */
+  const flyWhenReady = (map, target, zoom, durationSec) => {
+    const gen = ++flightGenRef.current;
+    const wait = new Promise(res => setTimeout(res, 700));
+    Promise.race([preloadTiles(map, target, zoom), wait]).then(() => {
+      if (flightGenRef.current !== gen || mapRef.current !== map) return;
+      startFlight(durationSec);
+      map.flyTo(target, zoom, { duration: durationSec });
+    });
+  };
+  /* Hide markers for the length of the flight, then fade them back in.
+     Timer-based on purpose: map.stop() can emit a stale moveend just as a new
+     flight starts, which would un-hide the markers mid-flight. */
+  const startFlight = (durationSec) => {
+    const node = el.current;
+    if (!node) return;
+    node.classList.add('flying');
+    clearTimeout(flyTimerRef.current);
+    flyTimerRef.current = setTimeout(() => {
+      if (el.current) el.current.classList.remove('flying');
+    }, durationSec * 1000 + 150);
+  };
 
   /* Animated fly-to: selecting a farm (card or marker) flies the map to its parcel;
      closing flies back to the overview. Offset keeps the parcel clear of the
@@ -149,7 +213,7 @@ function MapView({ scenario, selected, onSelect }){
     if (!selected){
       if (prev === undefined) return; /* initial mount: stay on overview */
       if (reduced) map.setView([-14, -62], 4, { animate: false });
-      else map.flyTo([-14, -62], 4, { duration: .9 });
+      else flyWhenReady(map, L.latLng(-14, -62), 4, .9);
       return;
     }
     const l = DATA.loans.find(x => x.loan_id === selected);
@@ -172,7 +236,7 @@ function MapView({ scenario, selected, onSelect }){
     }
     map.stop();
     if (reduced) map.setView(target, zoom, { animate: false });
-    else map.flyTo(target, zoom, { duration: .95 });
+    else flyWhenReady(map, target, zoom, .95);
   }, [selected]);
 
   return <div id="map" ref={el}></div>;
