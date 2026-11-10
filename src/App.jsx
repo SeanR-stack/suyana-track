@@ -131,6 +131,10 @@ function MapView({ scenario, selected, onSelect }){
       const pt = map.project(target, zoom);
       target = map.unproject(pt.add(L.point(240, 0)), zoom);
     }
+    if (window.innerWidth <= 900){
+      el.current.closest('.stage').scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
+    }
+    map.stop();
     if (reduced) map.setView(target, zoom, { animate: false });
     else map.flyTo(target, zoom, { duration: .95 });
   }, [selected]);
@@ -303,4 +307,4 @@ export function App(){
       </aside>
     </div>
   );
-}
+            }
