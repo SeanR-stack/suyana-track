@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Suyana - Portfolio Climate Review</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,560;9..144,640&family=Karla:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  :root{
+    --bg:#0c110d; --bg2:#111a13; --panel:rgba(255,255,255,.045); --line:rgba(255,255,255,.10);
+    --ink:#ecefe8; --dim:#9aa896; --faint:#6f7d6e;
+    --green:#a3d98b; --green-deep:#5d9c53; --red:#e8836f; --amber:#e4b272; --blue:#8fb8d8;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    background:
+      radial-gradient(1200px 700px at 85% -10%, rgba(93,156,83,.14), transparent 60%),
+      radial-gradient(900px 600px at -10% 110%, rgba(143,184,216,.07), transparent 55%),
+      linear-gradient(160deg, var(--bg2), var(--bg) 55%);
+    color:var(--ink);
+    font-family:'Karla',-apple-system,sans-serif;
+    font-weight:400;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.serif{font-family:'Fraunces',Georgia,serif}
+  button{font-family:inherit;cursor:pointer}
+
+  /* ---------- header ---------- */
+  header{
+    padding:26px 34px 18px;
+    display:flex;align-items:flex-end;justify-content:space-between;gap:18px;flex-wrap:wrap;
+  }
+  .brand{display:flex;align-items:center;gap:14px}
+  .mark{
+    width:42px;height:42px;border-radius:14px 5px 14px 5px;flex:none;
+    background:linear-gradient(145deg,#6aa757,#33562d);
+    box-shadow:0 6px 18px rgba(93,156,83,.35), inset 0 1px 0 rgba(255,255,255,.25);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .mark svg{width:24px;height:24px}
+  .brand h1{font-size:25px;font-weight:640;letter-spacing:.02em}
+  .brand .sub{color:var(--dim);font-size:13.5px;letter-spacing:.04em;margin-top:2px}
+  .dateline{color:var(--faint);font-size:12.5px;letter-spacing:.05em;text-align:right;line-height:1.6}
+
+  /* ---------- scenario bar ---------- */
+  .scenariobar{
+    margin:6px 34px 18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  }
+  .scenariobar .lab{color:var(--faint);font-size:12px;letter-spacing:.14em;text-transform:uppercase;margin-right:4px}
+  .pill{
+    border:1px solid var(--line);
+    background:rgba(255,255,255,.05);
+    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+    color:var(--dim);
+    padding:9px 18px;border-radius:20px 8px 20px 8px;
+    font-size:13.5px;font-weight:600;letter-spacing:.03em;
+    transition:transform .18s ease, box-shadow .18s ease, background .18s ease, color .18s ease;
+    box-shadow:0 2px 8px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.09);
+  }
+  .pill:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.14);color:var(--ink)}
+  .pill.on{
+    background:linear-gradient(150deg, rgba(163,217,139,.22), rgba(93,156,83,.14));
+    color:var(--green);border-color:rgba(163,217,139,.35);
+  }
+  .simbanner{
+    margin:0 34px 16px;padding:11px 18px;border-radius:14px 6px 14px 6px;
+    background:rgba(228,178,114,.10);border:1px solid rgba(228,178,114,.30);
+    color:var(--amber);font-size:13.5px;letter-spacing:.02em;display:none;
+  }
+  .simbanner.show{display:block}
+
+  /* ---------- layout ---------- */
+  .wrap{display:grid;grid-template-columns:1.25fr .95fr;gap:20px;padding:0 34px 30px;align-items:start}
+  @media (max-width:820px){ .wrap{grid-template-columns:1fr} header,.scenariobar,.simbanner{margin-left:18px;margin-right:18px} header,.scenariobar{padding-left:0;padding-right:0} .wrap{padding:0 18px 22px} .dateline{text-align:left;font-size:11.5px} header{align-items:flex-start;flex-direction:column} }
+
+  .mapcard{
+    border-radius:22px 8px 22px 8px;overflow:hidden;
+    border:1px solid var(--line);
+    box-shadow:0 18px 50px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06);
+    position:sticky;top:18px;
+  }
+  #map{height:640px;background:#0a0f0b}
+  @media (max-width:820px){ #map{height:44vh} .mapcard{position:static} }
+  .mapfoot{
+    padding:12px 18px;color:var(--faint);font-size:12px;letter-spacing:.05em;
+    background:rgba(0,0,0,.25);border-top:1px solid var(--line);
+    display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;
+  }
+  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:1px}
+
+  /* ---------- list ---------- */
+  .listhead{display:flex;justify-content:space-between;align-items:baseline;margin:4px 2px 12px}
+  .listhead h2{font-size:19px;font-weight:560}
+  .listhead span{color:var(--faint);font-size:12.5px;letter-spacing:.06em}
+  .farm{
+    width:100%;text-align:left;display:block;
+    background:var(--panel);border:1px solid var(--line);
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    border-radius:18px 7px 18px 7px;
+    padding:16px 20px;margin-bottom:12px;color:var(--ink);
+    transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+    box-shadow:0 3px 12px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.07);
+    animation:rise .35s ease both;
+  }
+  @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion: reduce){ .farm{animation:none} html{scroll-behavior:auto} }
+  .farm:hover{transform:translateY(-3px);box-shadow:0 12px 28px rgba(0,0,0,.38), inset 0 1px 0 rgba(255,255,255,.12);border-color:rgba(163,217,139,.25)}
+  .farm .top{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+  .farm .name{font-family:'Fraunces',serif;font-size:16.5px;font-weight:560}
+  .farm .rank{color:var(--faint);font-size:12px;letter-spacing:.1em}
+  .farm .flag{margin-top:5px;font-size:14px;font-weight:600;letter-spacing:.015em}
+  .farm .meta{margin-top:4px;color:var(--dim);font-size:13px;line-height:1.55}
+  .flag.red{color:var(--red)} .flag.amber{color:var(--amber)} .flag.green{color:var(--green)} .flag.grey{color:var(--dim)}
+
+  /* ---------- detail panel ---------- */
+  .overlay{position:fixed;inset:0;background:rgba(5,8,6,.55);backdrop-filter:blur(3px);opacity:0;pointer-events:none;transition:opacity .25s ease;z-index:2000}
+  .overlay.show{opacity:1;pointer-events:auto}
+  .detail{
+    position:fixed;top:0;right:0;bottom:0;width:min(480px,100%);z-index:2001;
+    background:linear-gradient(170deg,#131c15,#0d120e);
+    border-left:1px solid var(--line);
+    box-shadow:-24px 0 60px rgba(0,0,0,.5);
+    transform:translateX(102%);transition:transform .3s cubic-bezier(.32,.72,.28,1);
+    overflow-y:auto;padding:26px 28px 40px;
+  }
+  .detail.show{transform:none}
+  .detail.notrans, .overlay.notrans{transition:none!important}
+  @media (max-width:820px){
+    .detail{top:auto;left:0;right:0;bottom:0;width:auto;max-height:82vh;
+      border-left:none;border-top:1px solid var(--line);
+      border-radius:24px 24px 0 0;transform:translateY(102%)}
+    .detail.show{transform:none}
+  }
+  .detail .close{
+    position:absolute;top:18px;right:18px;width:38px;height:38px;border-radius:14px 6px 14px 6px;
+    border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--dim);font-size:17px;
+    transition:transform .18s ease,color .18s ease;
+  }
+  .detail .close:hover{transform:translateY(-2px);color:var(--ink)}
+  .detail h2{font-size:23px;font-weight:640;margin:6px 0 2px;padding-right:44px}
+  .detail .where{color:var(--dim);font-size:13.5px;margin-bottom:18px}
+  .statgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+  .stat{
+    background:var(--panel);border:1px solid var(--line);border-radius:16px 6px 16px 6px;
+    padding:13px 15px;box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
+  }
+  .stat .k{color:var(--faint);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase}
+  .stat .v{font-family:'Fraunces',serif;font-size:21px;font-weight:560;margin-top:5px}
+  .stat .n{color:var(--dim);font-size:12px;margin-top:3px;line-height:1.45}
+  .secttl{font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin:22px 0 10px}
+  .barwrap{margin-bottom:8px}
+  .bar{height:10px;border-radius:99px;background:rgba(255,255,255,.07);position:relative;overflow:hidden}
+  .bar .fill{position:absolute;top:0;bottom:0;left:0;border-radius:99px;background:linear-gradient(90deg,var(--green-deep),var(--green))}
+  .bar .hist{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--amber)}
+  .barlab{display:flex;justify-content:space-between;color:var(--dim);font-size:12.5px;margin-top:6px}
+  .satrow{
+    display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+    padding:11px 2px;border-bottom:1px solid rgba(255,255,255,.06);font-size:14px;
+  }
+  .satrow:last-child{border-bottom:none}
+  .satrow .d{color:var(--dim);font-size:13px}
+  .satrow .ndvi{font-family:'Fraunces',serif;font-size:17px;font-weight:560}
+  .note{color:var(--dim);font-size:13.5px;line-height:1.65;margin-top:14px}
+  .note strong{color:var(--ink);font-weight:600}
+  .stale{color:var(--amber)}
+  .osmlink{display:inline-block;margin-top:16px;color:var(--green);font-size:13.5px;text-decoration:none;border-bottom:1px solid rgba(163,217,139,.35);padding-bottom:1px}
+  .osmlink:hover{color:#c3ecaf}
+
+  /* ---------- about ---------- */
+  .about{
+    margin:0 34px 40px;padding:24px 28px;
+    background:var(--panel);border:1px solid var(--line);border-radius:22px 8px 22px 8px;
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    box-shadow:0 10px 30px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.07);
+  }
+  @media (max-width:820px){.about{margin:0 18px 30px}}
+  .about h2{font-size:18px;font-weight:560;margin-bottom:12px}
+  .about p{color:var(--dim);font-size:13.8px;line-height:1.75;margin-bottom:9px}
+  .about p strong{color:var(--ink);font-weight:600}
+
+  .leaflet-container{background:#0a0f0b;font-family:'Karla',sans-serif}
+  .leaflet-control-attribution{background:rgba(10,15,11,.75)!important;color:#5d6a5c!important;font-size:10px!important}
+  .leaflet-control-attribution a{color:#7d8c7b!important}
+  .leaflet-bar a{background:rgba(20,28,22,.9)!important;color:var(--dim)!important;border-color:var(--line)!important}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="mark" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 3C7 8 5 12 5 15a7 7 0 0 0 14 0c0-3-2-7-7-12z" fill="#0c110d" opacity=".55"/><path d="M12 5.5C8.4 9.3 7 12.4 7 15a5 5 0 0 0 10 0c0-2.6-1.4-5.7-5-9.5z" fill="#e9f4e2"/></svg>
+    </div>
+    <div>
+      <h1>Suyana</h1>
+      <div class="sub">Portfolio climate review - lender demo</div>
+    </div>
+  </div>
+  <div class="dateline">Weather through Nov 8 · Satellite scenes Sep 12 - Nov 8, 2026<br>Data tested Nov 9, 2026</div>
+</header>
+
+<div class="scenariobar" id="scenariobar">
+  <span class="lab">View</span>
+  <button class="pill on" data-sc="live">Nov 8 snapshot</button>
+  <button class="pill" data-sc="drought">Drought</button>
+  <button class="pill" data-sc="rain">Heavy rain</button>
+  <button class="pill" data-sc="heat">Heat wave</button>
+  <button class="pill" data-sc="missing">Missing data</button>
+</div>
+<div class="simbanner" id="simbanner">Simulated scenario - the readings below are not real. Switch back to the Nov 8 snapshot for measured data.</div>
+
+<div class="wrap">
+  <div class="mapcard">
+    <div id="map"></div>
+    <div class="mapfoot">
+      <span><span class="dot" style="background:var(--red)"></span>Needs a look&nbsp;&nbsp;<span class="dot" style="background:var(--amber)"></span>Watch&nbsp;&nbsp;<span class="dot" style="background:var(--green)"></span>Within norms&nbsp;&nbsp;<span class="dot" style="background:#8a938a"></span>No data</span>
+      <span>24 parcels</span>
+    </div>
+  </div>
+
+  <div>
+    <div class="listhead">
+      <h2>Where to look first</h2>
+      <span id="listsub"></span>
+    </div>
+    <div id="list"></div>
+
+    <div class="about" style="margin:26px 0 0">
+      <h2>What this is, and what it is not</h2>
+      <p><strong>Real ground, real readings.</strong> Every parcel is a public OpenStreetMap farmland boundary in Brazil, Colombia or Argentina. Weather is measured: 60-day rainfall and soil moisture from the Open-Meteo archive through Nov 8, compared against the same source's own 2021-2025 history for the same dates. Satellite readings are per-pixel vegetation (NDVI) measured inside the parcel boundary from Sentinel-2 scenes at 10 m resolution.</p>
+      <p><strong>Fictional loans.</strong> The portfolio, loan IDs and amounts are invented for this demo. These are real farms on a map, not Suyana customers.</p>
+      <p><strong>Flags say where to look, not who will default.</strong> A low vegetation reading can follow harvest, planting or crop stage as easily as stress. A rain deficit is a reason to call the farmer, not proof of loss. Nothing here predicts default.</p>
+      <p><strong>Ranking.</strong> Sorted by the size of each parcel's rainfall anomaly against its own 5-year baseline. Soil moisture is shown as context only (raw volumetric value, 0-7 cm depth), not judged against a seasonal target. The point is investigation order, not a score.</p>
+      <p><strong>Stale data is shown, not hidden.</strong> Every satellite reading carries its scene date. Cloudy stretches mean some readings are weeks old, and that age is printed next to the number.</p>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay"></div>
+<aside class="detail" id="detail"></aside>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const DATA = {
+ "generated": "2026-11-09",
+ "weather_window": "Sep 10 - Nov 8, 2026",
+ "baseline": "same dates 2021-2025, Open-Meteo archive (single source)",
+ "loans": [
+  {
+   "loan_id": "PF-01",
+   "osm_way": "175740700",
+   "osm_url": "https://www.openstreetmap.org/way/175740700",
+   "region": "Sao Paulo, Brazil",
+   "country": "Brazil",
+   "lat": -21.7431,
+   "lon": -48.58544,
+   "area_ha": 502.5,
+   "amount_usd": 18700,
+   "rain_60d_mm": 295.1,
+   "rain_hist_mm": 216.0,
+   "rain_anomaly_pct": 36.6,
+   "soil_moisture": 0.293,
+   "s2": null
+  },
+  {
+   "loan_id": "PF-02",
+   "osm_way": "175740716",
+   "osm_url": "https://www.openstreetmap.org/way/175740716",
+   "region": "Sao Paulo, Brazil",
+   "country": "Brazil",
+   "lat": -21.73246,
+   "lon": -48.57673,
+   "area_ha": 15.3,
+   "amount_usd": 9500,
+   "rain_60d_mm": 295.1,
+   "rain_hist_mm": 216.0,
+   "rain_anomaly_pct": 36.6,
+   "soil_moisture": 0.293,
+   "s2": {
+    "readings": [
+     {
+      "date": "2026-09-17",
+      "ndvi": 0.598,
+      "std": 0.165,
+      "px": 1610.0
+     },
+     {
+      "date": "2026-11-04",
+      "ndvi": 0.71,
+      "std": 0.161,
+      "px": 1610.0
+     }
+    ]
+   }
+  },
+  {
+   "loan_id": "PF-03",
+   "osm_way": "175740726",
+   "osm_url": "https://www.openstreetmap.org/way/175740726",
+   "region": "Sao Paulo, Brazil",
+   "country": "Brazil",
+   "lat": -21.73043,
+   "lon": -48.57656,
+   "area_ha": 15.4,
+   "amount_usd": 47200,
+   "rain_60d_mm": 295.1,
+   "rain_hist_mm": 216.0,
+   "rain_anomaly_pct": 36.6,
+   "soil_moisture": 0.293,
+   "s2": null
+  },
+  {
+   "loan_id": "PF-04",
+   "osm_way": "175740732",
+   "osm_url": "https://www.openstreetmap.org/way/175740732",
+   "region": "Sao Paulo, Brazil",
+   "country": "Brazil",
+   "lat": -21.72684,
+   "lon": -48.57729,
+   "area_ha": 18.2,
+   "amount_usd": 26000,
+   "rain_60d_mm": 295.1,
+   "rain_hist_mm": 216.0,
+   "rain_anomaly_pct": 36.6,
+   "soil_moisture": 0.293,
+   "s2": {
+    "readings": [
+     {
+      "date": "2026-09-17",
+      "ndvi": 0.538,
+      "std": 0.066,
+      "px": 1934.0
+     },
+     {
+      "date": "2026-11-04",
+      "ndvi": 0.197,
+      "std": 0.101,
+      "px": 1934.0
+     }
+    ]
+   }
+  },
+  {
+   "loan_id": "PF-05",
+   "osm_way": "89286227",
+   "osm_url": "https://www.openstreetmap.org/way/89286227",
+   "region": "Valle del Cauca, Colombia",
+   "country": "Colombia",
+   "lat": 3.53285,
+   "lon": -76.40565,
+   "area_ha": 105.3,
+   "amount_usd": 26000,
+   "rain_60d_mm": 409.9,
+   "rain_hist_mm": 597.7,
+   "rain_anomaly_pct": -31.4,
+   "soil_moisture": 0.503,
+   "s2": null
+  },
+  {
+   "loan_id": "PF-06",
+   "osm_way": "175740729",
+   "osm_url": "https://www.openstreetmap.org/way/175740729",
+   "region": "Sao Paulo, Brazil",
+   "country": "Brazil",
+   "lat": -21.72904,
+   "lon": -48.59229,
+   "area_ha": 19.1,
+   "amount_usd": 9500,
+   "rain_60d_mm": 270.8,
+   "rain_hist_mm": 208.5,
+   "rain_anomaly_pct": 29.9,
+   "soil_moisture": 0.238,
+   "s2": null
+  },
+  {
+   "loan_id": "PF-07",
+   "osm_way": "175740736",
+   "osm_url": "https://www.openstreetmap.org/way/175740736",
+   "region": "Sao Paulo, Brazil",
+   "country": "Brazil",
+   "lat": -21.72969,
+   "lon": -48.58909,
+   "area_ha": 32.7,
+   "amount_usd": 58900,
+   "rain_60d_mm": 270.8,
+   "rain_hist_mm": 208.5,
+   "rain_anomaly_pct": 29.9,
+   "soil_moisture": 0.238,
+   "s2": null
+  },
+  {
+   "loan_id": "PF-08",
+   "osm_way": "917762167",
+   "osm_url": "https://www.openstreetmap.org/way/917762167",
+   "region": "Mato Grosso, Brazil",
+   "country": "Brazil",
+   "lat": -13.18197,
+   "lon": -55.53233,
+   "area_ha": 2373.8,
+   "amount_usd": 26000,
+   "rain_60d_mm": 150.3,
+   "rain_hist_mm": 211.3,
+   "rain_anomaly_pct": -28.9,
+   "soil_moisture": 0.315,
+   "s2": {
+    "readings": [
+     {
+      "date": "2026-09-19",
+      "ndvi": 0.217,
+      "std": 0.154,
+      "px": 238191.0
+     },
+     {
+      "date": "2026-10-22",
+      "ndvi": 0.36,
+      "std": 0.199,
+      "px": 238191.0
+     }
+    ]
+   }
+  },
+  {
+   "loan_id": "PF-09",
+   "osm_way": "864696131",
+   "osm_url": "https://www.openstreetmap.org/way/864696131",
+   "region": "Mato Grosso, Brazil",
+   "country": "Brazil",
+   "lat": -12.86868,
+   "lon": -55.77979,
+   "area_ha": 99.4,
+   "amount_usd": 12400,
+   "rain_60d_mm": 149.8,
+   "rain_hist_mm": 203.9,
+   "rain_anomaly_pct": -26.5,
+   "soil_moisture": 0.268,
+   "s2": {
+    "readings": [
+     {
+      "date": "2026-09-19",
+      "ndvi": 0.181,
+      "std": 0.012,
+      "px": 10090.0
+     },
+     {
+      "date": "2026-10-22",
+      "ndvi": 0.68,
+      "std": 0.071,
+      "px": 10090.0
+     }
+    ]
+   }
+  },
+  {
+   "loan_id": "PF-10",
+   "osm_way": "864696134",
+   "osm_url": "https://www.openstreetmap.org/way/864696134",
+   "region": "Mato Grosso, Brazil",
+   "country": "Brazil",
+   "lat": -12.82742,
+   "lon": -55.75762,
+   "area_ha": 153.3,
+   "amount_usd": 26000,
+   "rain_60d_mm": 149.8,
+   "rain_hist_mm": 203.9,
+   "rain_anomaly_pct": -26.5,
+   "soil_moisture": 0.268,
+   "s2": null
+  },
+  {
+   "loan_id": "PF-11",
+   "osm_way": "864696132",
+   "osm_url": "https://www.openstreetmap.org/way/864696132",
+   "region": "Mato Grosso, Brazil",
+   "country": "Brazil",
+   "lat": -12.87866,
+   "lon": -55.78248,
+   "area_ha": 98.8,
+   "amount_usd": 58900,
+   "rain_60d_mm": 142.8,
+   "rain_hist_mm": 193.7,
+   "rain_anomaly_pct": -26.3,
+   "soil_moisture": 0.28,
+   "s2": null
+  },
+  {
+   "loan_id": "PF-12",
+   "osm_way": "864696133",
+   "osm_url": "https://www.openstreetmap.org/way/864696133",
+   "region": "Mato Grosso, Brazil",
+   "country": "Brazil",
+   "lat": -12.87704,
+   "lon": -55.77694,
+   "area_ha": 49.6,
+   "amount_usd": 58900,
+   "rain_60d_mm": 142.8,
+   "rain_hist_mm": 193.7,
+   "rain_anomaly_pct": -26.3,
+   "soil_moisture": 0.28,
+   "s2": null
+  },
+  {
+   "loan_id": "PF-13",
+   "osm_way": "39260366",
+   "osm_url": "https://www.openstreetmap.org/way/39260366",
+   "region": "Valle del Cauca, Colombia",
+   "country": "Colombia",
+   "lat": 3.38171,
+   "lon": -76.48107,
+   "area_ha": 23.0,
+   "amount_usd": 33500,
+   "rain_60d_mm": 903.5,
+   "rain_hist_mm": 1092.2,
+   "rain_anomaly_pct": -17.3,
+   "soil_moisture": 0.478,
+   "s2": null
+  },
+  {
+   "loan_id": "PF-14",
+   "osm_way": "39260370",
+   "osm_url": "https://www.openstreetmap.org/way/39260370",
+   "region": "Valle del Cauca, Colombia",
+   "country": "Colombia",
+   "lat": 3.39904,
+   "lon": -76.4696,
+   "area_ha": 25.0,
+   "amount_usd": 58900,
+   "rain_60d_mm": 903.5,
+   "rain_hist_mm": 1092.2,
+   "rain_anomaly_pct": -17.3,
+   "soil_moisture": 0.478,
+   "s2": null
+  },
+  {
+   "loan_id": "PF-15",
+   "osm_way": "39260371",
+   "osm_url": "https://www.openstreetmap.org/way/39260371",
+   "region": "Valle del Cauca, Colombia",
+   "country": "Colombia",
+   "lat": 3.40048,
+   "lon": -76.47606,
+   "area_ha": 18.8,
+   "amount_usd": 9500,
+   "rain_60d_mm": 903.5,
+   "rain_hist_mm": 1092.2,
+   "rain_anomaly_pct": -17.3,
+   "soil_moisture": 0.478,
+   "s2": {
+    "readings": [
+     {
+      "date": "2026-09-12",
+      "ndvi": 0.426,
+      "std": 0.174,
+      "px": 2050.0
+     },
+     {
+      "date": "2026-10-09",
+      "ndvi": 0.54,
+      "std": 0.133,
+      "px": 2050.0
+     }
+    ]
+   }
+  },
+  {
+   "loan_id": "PF-16",
+   "osm_way": "89286212",
+   "osm_url": "https://www.openstreetmap.org/way/89286212",
+   "region": "Valle del Cauca, Colombia",
+   "country": "Colombia",
+   "lat": 3.51628,
+   "lon": -76.42685,
+   "area_ha": 159.8,
+   "amount_usd": 26000,
+   "rain_60d_mm": 834.9,
+   "rain_hist_mm": 988.2,
+   "rain_anomaly_pct": -15.5,
+   "soil_moisture": 0.407,
+   "s2": {
+    "readings": [
+     {
+      "date": "2026-09-12",
+      "ndvi": 0.575,
+      "std": 0.209,
+      "px": 16240.0
+     },
+     {
+      "date": "2026-10-09",
+      "ndvi": 0.634,
+      "std": 0.135,
+      "px": 16240.0
+     }
+    ]
+   }
+  },
+  {
+   "loan_id": "PF-17",
+   "osm_way": "89286249",
+   "osm_url": "https://www.openstreetmap.org/way/89286249",
+   "region": "Valle del Cauca, Colombia",
+   "country": "Colombia",
+   "lat": 3.51166,
+   "lon": -76.41702,
+   "area_ha": 56.1,
+   "amount_usd": 47200,
+   "rain_60d_mm": 834.9,
+   "rain_hist_mm": 988.2,
+   "rain_anomaly_pct": -15.5,
+   "soil_moisture": 0.407,
+   "s2": null
+  },
+  {
+   "loan_id": "PF-18",
+   "osm_way": "1267524185",
+   "osm_url": "https://www.openstreetmap.org/way/1267524185",
+   "region": "Buenos Aires, Argentina",
+   "country": "Argentina",
+   "lat": -34.57491,
+   "lon": -60.45725,
+   "area_ha": 12.9,
+   "amount_usd": 33500,
+   "rain_60d_mm": 126.3,
+   "rain_hist_mm": 138.3,
+   "rain_anomaly_pct": -8.7,
+   "soil_moisture": 0.391,
+   "s2": null
+  },
+  {
+   "loan_id": "PF-19",
+   "osm_way": "870457386",
+   "osm_url": "https://www.openstreetmap.org/way/870457386",
+   "region": "Mato Grosso, Brazil",
+   "country": "Brazil",
+   "lat": -12.87627,
+   "lon": -55.90419,
+   "area_ha": 1416.6,
+   "amount_usd": 12400,
+   "rain_60d_mm": 177.8,
+   "rain_hist_mm": 193.4,
+   "rain_anomaly_pct": -8.0,
+   "soil_moisture": 0.27,
+   "s2": null
+  },
+  {
+   "loan_id": "PF-20",
+   "osm_way": "1267524174",
+   "osm_url": "https://www.openstreetmap.org/way/1267524174",
+   "region": "Buenos Aires, Argentina",
+   "country": "Argentina",
+   "lat": -34.58065,
+   "lon": -60.4574,
+   "area_ha": 7.9,
+   "amount_usd": 9500,
+   "rain_60d_mm": 135.9,
+   "rain_hist_mm": 142.8,
+   "rain_anomaly_pct": -4.8,
+   "soil_moisture": 0.379,
+   "s2": {
+    "readings": [
+     {
+      "date": "2026-09-14",
+      "ndvi": 0.212,
+      "std": 0.033,
+      "px": 850.0
+     },
+     {
+      "date": "2026-11-08",
+      "ndvi": 0.238,
+      "std": 0.047,
+      "px": 850.0
+     }
+    ]
+   }
+  },
+  {
+   "loan_id": "PF-21",
+   "osm_way": "1267524175",
+   "osm_url": "https://www.openstreetmap.org/way/1267524175",
+   "region": "Buenos Aires, Argentina",
+   "country": "Argentina",
+   "lat": -34.5772,
+   "lon": -60.45421,
+   "area_ha": 19.5,
+   "amount_usd": 47200,
+   "rain_60d_mm": 135.9,
+   "rain_hist_mm": 142.8,
+   "rain_anomaly_pct": -4.8,
+   "soil_moisture": 0.379,
+   "s2": null
+  },
+  {
+   "loan_id": "PF-22",
+   "osm_way": "1468747676",
+   "osm_url": "https://www.openstreetmap.org/way/1468747676",
+   "region": "Buenos Aires, Argentina",
+   "country": "Argentina",
+   "lat": -34.58595,
+   "lon": -60.43912,
+   "area_ha": 196.7,
+   "amount_usd": 58900,
+   "rain_60d_mm": 135.9,
+   "rain_hist_mm": 142.8,
+   "rain_anomaly_pct": -4.8,
+   "soil_moisture": 0.379,
+   "s2": null
+  },
+  {
+   "loan_id": "PF-23",
+   "osm_way": "1468747677",
+   "osm_url": "https://www.openstreetmap.org/way/1468747677",
+   "region": "Buenos Aires, Argentina",
+   "country": "Argentina",
+   "lat": -34.58993,
+   "lon": -60.42955,
+   "area_ha": 79.3,
+   "amount_usd": 12400,
+   "rain_60d_mm": 135.9,
+   "rain_hist_mm": 142.8,
+   "rain_anomaly_pct": -4.8,
+   "soil_moisture": 0.379,
+   "s2": null
+  },
+  {
+   "loan_id": "PF-24",
+   "osm_way": "1468747678",
+   "osm_url": "https://www.openstreetmap.org/way/1468747678",
+   "region": "Buenos Aires, Argentina",
+   "country": "Argentina",
+   "lat": -34.5849,
+   "lon": -60.4155,
+   "area_ha": 13.4,
+   "amount_usd": 9500,
+   "rain_60d_mm": 138.8,
+   "rain_hist_mm": 145.3,
+   "rain_anomaly_pct": -4.4,
+   "soil_moisture": 0.382,
+   "s2": {
+    "readings": [
+     {
+      "date": "2026-09-14",
+      "ndvi": 0.218,
+      "std": 0.031,
+      "px": 1401.0
+     },
+     {
+      "date": "2026-11-08",
+      "ndvi": 0.285,
+      "std": 0.039,
+      "px": 1401.0
+     }
+    ]
+   }
+  }
+ ]
+};
+</script>
+<script>
+const $ = s => document.querySelector(s);
+let scenario = 'live';
+let markers = {};
+
+/* ---------- scenario transforms ---------- */
+function readings(loan){
+  let a = loan.rain_anomaly_pct, soil = loan.soil_moisture, sat = loan.s2, missing = false;
+  if (scenario === 'drought'){ a = a - 38; soil = soil * 0.65; }
+  if (scenario === 'rain'){ a = a + 65; soil = Math.min(soil * 1.35, 0.6); }
+  if (scenario === 'heat'){ soil = soil * 0.75; }
+  if (scenario === 'missing'){
+    const n = parseInt(loan.loan_id.slice(3), 10);
+    if (n % 3 === 0){ missing = true; }
+  }
+  return { a: Math.round(a), soil, sat, missing };
+}
+
+function flagFor(r){
+  if (r.missing) return { level:'grey', label:'No current data', sort: 95 };
+  let level = 'green', label = 'Rain near seasonal norm';
+  if (r.a <= -25){ level='red'; label='Rain well below normal'; }
+  else if (r.a >= 30){ level='red'; label='Rain far above normal'; }
+  else if (r.a <= -15 || r.a >= 20){ level='amber'; label = r.a < 0 ? 'Rain below normal' : 'Rain above normal'; }
+  const sort = Math.abs(r.a);
+  return { level, label, sort };
+}
+
+function fmtRain(l, r){ return `${l.rain_60d_mm} mm in 60 days vs ${l.rain_hist_mm} mm typical`; }
+function ageOf(dateStr){
+  const days = Math.round((new Date('2026-11-10') - new Date(dateStr)) / 86400000);
+  return days;
+}
+
+/* ---------- list ---------- */
+function renderList(){
+  const rows = DATA.loans.map(l => ({ l, r: readings(l) }));
+  rows.forEach(x => x.f = flagFor(x.r));
+  rows.sort((x, y) => y.f.sort - x.f.sort);
+  $('#listsub').textContent = scenario === 'live' ? 'ranked by rainfall anomaly' : 'simulated ranking';
+  $('#list').innerHTML = rows.map((x, i) => {
+    const satline = x.r.missing ? 'No recent reading - data feed down'
+      : x.r.sat ? `Satellite ${x.r.sat.readings[x.r.sat.readings.length-1].ndvi.toFixed(2)} on ${x.r.sat.readings[x.r.sat.readings.length-1].date}`
+      : 'No 10 m satellite reading yet';
+    return `<button class="farm" data-id="${x.l.loan_id}">
+      <div class="top"><span class="name">${x.l.region}</span><span class="rank">#${i+1}</span></div>
+      <div class="flag ${x.f.level}">${x.f.label} · ${x.r.a > 0 ? '+' : ''}${x.r.a}% rain vs 5-yr</div>
+      <div class="meta">${x.l.area_ha} ha · ${x.l.loan_id} · soil moisture ${x.r.missing ? '—' : x.r.soil.toFixed(2)} · ${satline}</div>
+    </button>`;
+  }).join('');
+  document.querySelectorAll('.farm').forEach(b => b.onclick = () => openDetail(b.dataset.id));
+}
+
+/* ---------- map ---------- */
+const COLORS = { red:'#e8836f', amber:'#e4b272', green:'#a3d98b', grey:'#8a938a' };
+let map;
+function initMap(){
+  map = L.map('map', { scrollWheelZoom: true, zoomControl: true, attributionControl: true })
+        .setView([-14, -62], 4);
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 12, attribution: 'Esri, Maxar, Earthstar Geographics'
+  }).addTo(map);
+  DATA.loans.forEach(l => {
+    const m = L.circleMarker([l.lat, l.lon], {
+      radius: 7 + Math.min(Math.sqrt(l.area_ha) / 6, 9),
+      color: '#a3d98b', weight: 2, fillColor: '#a3d98b', fillOpacity: .55
+    }).addTo(map);
+    m.on('click', () => openDetail(l.loan_id));
+    markers[l.loan_id] = m;
+  });
+}
+function paintMap(){
+  DATA.loans.forEach(l => {
+    const r = readings(l), f = flagFor(r), m = markers[l.loan_id];
+    if (m) m.setStyle({ color: COLORS[f.level], fillColor: COLORS[f.level] });
+  });
+}
+
+/* ---------- detail ---------- */
+function openDetail(id, instant){
+  if (instant){ $('#detail').classList.add('notrans'); $('#overlay').classList.add('notrans'); }
+  const l = DATA.loans.find(x => x.loan_id === id);
+  const r = readings(l), f = flagFor(r);
+  const pct = Math.min(Math.abs(r.a), 100);
+  const fill = Math.min(l.rain_60d_mm / Math.max(l.rain_hist_mm * 1.6, 1) * 100, 100);
+  const histMark = Math.min(l.rain_hist_mm / Math.max(l.rain_hist_mm * 1.6, 1) * 100, 100);
+
+  let satHtml;
+  if (r.missing){
+    satHtml = `<p class="note"><strong>No recent reading.</strong> The feed for this parcel is down in this scenario. For a lender, that itself is a reason to visit first.</p>`;
+  } else if (r.sat){
+    satHtml = r.sat.readings.map(s => {
+      const age = ageOf(s.date);
+      const stale = age > 14 ? ` <span class="stale">- ${age} days old</span>` : ` - ${age} days old`;
+      return `<div class="satrow"><span class="d">Scene ${s.date}${stale}<br>${s.px.toLocaleString()} px measured inside boundary</span><span class="ndvi">${s.ndvi.toFixed(2)}</span></div>`;
+    }).join('') + `<p class="note">NDVI is vegetation density from Sentinel-2 at 10 m, measured Nov 9. <strong>A low number does not say why</strong> - harvest, planting, crop stage and stress all read low. It tells you where to ask questions.</p>`;
+  } else {
+    satHtml = `<p class="note">No 10 m satellite reading for this parcel in this demo - the first test covered 8 of the 24 parcels. Coarser 245 m imagery exists but disagreed with 10 m measurements by too much to quote as a farm number.</p>`;
+  }
+
+  const weatherHtml = r.missing
+    ? `<p class="note"><strong>Weather feed down</strong> for this parcel in this scenario. No current rain or soil reading.</p>`
+    : `<div class="barwrap">
+        <div class="bar"><div class="fill" style="width:${fill}%"></div><div class="hist" style="left:${histMark}%"></div></div>
+        <div class="barlab"><span>${fmtRain(l, r)}</span><span>${r.a > 0 ? '+' : ''}${r.a}%</span></div>
+      </div>
+      <p class="note">Rain compares Sep 10 - Nov 8, 2026 against the same dates in 2021-2025 from one source (Open-Meteo archive). Mixing sources flipped one country's anomaly sign in testing, so the baseline never mixes them.</p>`;
+
+  $('#detail').innerHTML = `
+    <button class="close" onclick="closeDetail()">×</button>
+    <div class="secttl" style="margin-top:0">${l.loan_id} · fictional loan $${l.amount_usd.toLocaleString()}</div>
+    <h2 class="serif">${l.region}</h2>
+    <div class="where">${l.area_ha} ha parcel · OpenStreetMap way ${l.osm_way}</div>
+    <div class="flag ${f.level}" style="font-size:16px;font-weight:700;margin-bottom:16px">${f.label}${r.missing ? '' : ` · ${r.a > 0 ? '+' : ''}${r.a}% rain vs 5-yr`}</div>
+    <div class="statgrid">
+      <div class="stat"><div class="k">Rain, 60 days</div><div class="v">${r.missing ? '—' : l.rain_60d_mm + ' mm'}</div><div class="n">${r.missing ? 'no current reading' : 'typical ' + l.rain_hist_mm + ' mm'}</div></div>
+      <div class="stat"><div class="k">Soil moisture (0-7 cm)</div><div class="v">${r.missing ? '—' : r.soil.toFixed(2)}</div><div class="n">${r.missing ? 'no current reading' : 'volumetric m³/m³, through Nov 8'}</div></div>
+    </div>
+    <div class="secttl">Rainfall vs its own history</div>
+    ${weatherHtml}
+    <div class="secttl">Satellite vegetation</div>
+    ${satHtml}
+    <p class="note">This flag is a reason to call or visit the farmer. <strong>It is not a default prediction.</strong></p>
+    <a class="osmlink" href="${l.osm_url}" target="_blank" rel="noopener">See this parcel's real boundary on OpenStreetMap</a>
+  `;
+  $('#detail').classList.add('show');
+  $('#overlay').classList.add('show');
+  if (instant){ requestAnimationFrame(()=>requestAnimationFrame(()=>{ $('#detail').classList.remove('notrans'); $('#overlay').classList.remove('notrans'); })); }
+}
+function closeDetail(){
+  $('#detail').classList.remove('show');
+  $('#overlay').classList.remove('show');
+}
+$('#overlay').onclick = closeDetail;
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDetail(); });
+
+/* ---------- scenarios ---------- */
+document.querySelectorAll('#scenariobar .pill').forEach(b => {
+  b.onclick = () => {
+    scenario = b.dataset.sc;
+    document.querySelectorAll('#scenariobar .pill').forEach(x => x.classList.toggle('on', x === b));
+    $('#simbanner').classList.toggle('show', scenario !== 'live');
+    renderList(); paintMap();
+    if (typeof map !== 'undefined') map.closePopup();
+  };
+});
+
+initMap();
+renderList();
+paintMap();
+
+/* deep links / screenshot states */
+const q = new URLSearchParams(location.search);
+if (q.get('sc') && document.querySelector(`#scenariobar .pill[data-sc="${q.get('sc')}"]`)){
+  document.querySelector(`#scenariobar .pill[data-sc="${q.get('sc')}"]`).click();
+}
+if (q.get('farm')){ openDetail(q.get('farm'), true); }
+</script>
+</body>
+</html>
