@@ -123,6 +123,48 @@ function preloadTiles(map, center, zoom, margin = 1){
   return Promise.allSettled(loads);
 }
 
+/* Animated imagery backdrop for flights. Leaflet drops/swaps tile levels when
+   it likes during a flyTo (its forced mid-flight resets ignore
+   updateWhenZooming), which is what flashed the dark background. This clones
+   the currently painted tiles into a plain layer beneath the tile pane and
+   re-applies Leaflet's own zoom/pan transform to it on every animation frame,
+   so real imagery is always painted under the flight. It fades out once the
+   destination's tiles finish drawing. Cloned <img> nodes reuse the same URLs,
+   so the browser cache serves them - no refetch. */
+function makeBackdrop(map, layer){
+  const lvl = layer && layer._levels[layer._tileZoom];
+  if (!lvl || !lvl.el.children.length) return null;
+  const bg = document.createElement('div');
+  bg.style.cssText = 'position:absolute;left:0;top:0;z-index:1;pointer-events:none;transform-origin:0 0;will-change:transform;';
+  lvl.el.querySelectorAll('img').forEach(img => {
+    const c = img.cloneNode();
+    c.style.cssText = img.style.cssText;
+    bg.appendChild(c);
+  });
+  const mapPane = map.getPane('mapPane');
+  mapPane.insertBefore(bg, mapPane.firstChild);
+  const origin = lvl.origin, z0 = lvl.zoom;
+  const update = () => {
+    const zoom = map.getZoom();
+    const scale = map.getZoomScale(zoom, z0);
+    const translate = origin.multiplyBy(scale)
+      .subtract(map._getNewPixelOrigin(map.getCenter(), zoom)).round();
+    L.DomUtil.setTransform(bg, translate, scale);
+  };
+  update();
+  map.on('zoom move', update);
+  let removed = false;
+  const remove = () => {
+    if (removed) return;
+    removed = true;
+    map.off('zoom move', update);
+    bg.style.transition = 'opacity .25s ease';
+    bg.style.opacity = '0';
+    setTimeout(() => bg.remove(), 300);
+  };
+  return { remove };
+}
+
 function MapView({ scenario, selected, onSelect }){
   const el = useRef(null);
   const mapRef = useRef(null);
@@ -139,7 +181,7 @@ function MapView({ scenario, selected, onSelect }){
        current tiles stay painted and scale smoothly through the whole flight
        instead of being dropped for a level that has not loaded yet. The old
        level also stays under the new one after landing until its tiles draw. */
-    L.tileLayer(TILE_URL, {
+    tileLayerRef.current = L.tileLayer(TILE_URL, {
       maxZoom: 14, maxNativeZoom: 13,
       updateWhenZooming: false,
       attribution: '<a href="https://cloudless.eox.at">EOxCloudless</a> by EOX IT Services GmbH (Contains modified Copernicus Sentinel data 2025) | <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a>' 
@@ -168,15 +210,33 @@ function MapView({ scenario, selected, onSelect }){
   }, [scenario]);
 
   const flyTimerRef = useRef(null);
+  const tileLayerRef = useRef(null);
+  const backdropRef = useRef(null);
   const flightGenRef = useRef(0);
   /* Preload destination tiles, then start the flight once they are mostly in
      (capped wait so a slow connection cannot stall the response). A stale
      continuation from an earlier selection never starts a flight. */
   const flyWhenReady = (map, target, zoom, durationSec) => {
     const gen = ++flightGenRef.current;
+    /* Hide markers as soon as a flight is chosen (startFlight only runs after
+       the preload wait, and an expiring prior timer would un-hide them in
+       between). startFlight re-arms the hide timer for the flight itself. */
+    if (el.current) { el.current.classList.add('flying'); clearTimeout(flyTimerRef.current); }
     const wait = new Promise(res => setTimeout(res, 700));
     Promise.race([preloadTiles(map, target, zoom), wait]).then(() => {
       if (flightGenRef.current !== gen || mapRef.current !== map) return;
+      if (backdropRef.current) { backdropRef.current.remove(); backdropRef.current = null; }
+      const layer = tileLayerRef.current;
+      const bg = makeBackdrop(map, layer);
+      backdropRef.current = bg;
+      if (bg){
+        map.once('moveend', () => {
+          const drop = () => { if (backdropRef.current === bg){ bg.remove(); backdropRef.current = null; } };
+          if (layer && !layer._loading) drop();
+          else if (layer) layer.once('load', drop);
+          setTimeout(drop, 2500); /* safety: never leave a stale backdrop */
+        });
+      }
       startFlight(durationSec);
       map.flyTo(target, zoom, { duration: durationSec });
     });
